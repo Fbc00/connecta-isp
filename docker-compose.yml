@@ -1,0 +1,29 @@
+services:
+  # API Express sobre Bun — não exposta diretamente, só via nginx
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DB_PATH: /data/data.sqlite
+    volumes:
+      - sqlite:/data
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  # nginx: serve o build do React e faz proxy de /api → server
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  sqlite:
