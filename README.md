@@ -45,6 +45,11 @@ npm run lint:fix    # corrige o que for automático
 npm run format      # só formata
 ```
 
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) roda em todo push/PR na `main`:
+`npm ci` → lint (Biome) → typecheck → testes (Vitest) → build.
+
 ## API — `tasks`
 
 | Método | Rota             | Descrição          |
