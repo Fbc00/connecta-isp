@@ -7,14 +7,18 @@ import { type Task, tasksApi } from "../services/api";
 export function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<boolean>(false);
 
   async function run(action: () => Promise<unknown>) {
+    setLoadingAction(true);
     try {
       setError(null);
       await action();
       setTasks(await tasksApi.list());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setLoadingAction(false);
     }
   }
 
@@ -37,7 +41,10 @@ export function TasksPage() {
         </Text>
       )}
 
-      <TaskForm onCreate={(title) => run(() => tasksApi.create(title))} />
+      <TaskForm
+        loading={loadingAction}
+        onCreate={(title) => run(() => tasksApi.create(title))}
+      />
 
       {tasks.length === 0 ? (
         <Text color="fg.muted">Nenhuma tarefa ainda.</Text>

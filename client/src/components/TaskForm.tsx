@@ -3,9 +3,10 @@ import { type FormEvent, useState } from "react";
 
 interface Props {
   onCreate: (title: string) => void;
+  loading?: boolean;
 }
 
-export function TaskForm({ onCreate }: Props) {
+export function TaskForm({ onCreate, loading }: Props) {
   const [title, setTitle] = useState("");
 
   function handleSubmit(e: FormEvent) {
@@ -24,7 +25,7 @@ export function TaskForm({ onCreate }: Props) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <Button type="submit" colorPalette="blue" flexShrink={0}>
+        <Button type="submit" colorPalette="blue" flexShrink={0} loading={loading}>
           Adicionar
         </Button>
       </HStack>
