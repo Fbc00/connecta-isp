@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { db } from "../../config/db.js";
 import { createTask, deleteTask, listTasks, updateTask } from "./tasks.service.js";
 

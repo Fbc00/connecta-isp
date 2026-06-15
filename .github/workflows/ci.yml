@@ -30,16 +30,15 @@ jobs:
         uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version: latest
       - name: Install
-        run: npm ci
+        run: bun install
       - name: Typecheck
         run: |
-          npx tsc -p tsconfig.json --noEmit
-          npx tsc -p client/tsconfig.json --noEmit
-      - name: Test (Vitest)
-        run: npm test
+          bunx tsc -p tsconfig.json --noEmit
+          bunx tsc -p client/tsconfig.json --noEmit
+      - name: Test (bun)
+        run: bun run test
