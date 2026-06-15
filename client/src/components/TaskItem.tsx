@@ -1,3 +1,4 @@
+import { Button, Checkbox, Flex, Input, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import type { Task } from "../services/api";
 
@@ -21,12 +22,16 @@ export function TaskItem({ task, onToggle, onEdit, onDelete }: Props) {
   }
 
   return (
-    <li>
-      <input type="checkbox" checked={task.completed} onChange={() => onToggle(task)} />
+    <Flex align="center" gap={2} borderWidth="1px" borderRadius="md" p={3}>
+      <Checkbox.Root checked={task.completed} onCheckedChange={() => onToggle(task)}>
+        <Checkbox.HiddenInput />
+        <Checkbox.Control />
+      </Checkbox.Root>
 
       {editing ? (
-        <input
-          type="text"
+        <Input
+          flex="1"
+          size="sm"
           value={draft}
           autoFocus
           onChange={(e) => setDraft(e.target.value)}
@@ -34,29 +39,40 @@ export function TaskItem({ task, onToggle, onEdit, onDelete }: Props) {
           onKeyDown={(e) => e.key === "Enter" && save()}
         />
       ) : (
-        <span className={`title ${task.completed ? "done" : ""}`}>{task.title}</span>
+        <Text
+          flex="1"
+          textDecoration={task.completed ? "line-through" : "none"}
+          color={task.completed ? "fg.muted" : "fg"}
+        >
+          {task.title}
+        </Text>
       )}
 
       {editing ? (
-        <button type="button" className="secondary" onClick={save}>
+        <Button size="sm" variant="subtle" onClick={save}>
           Salvar
-        </button>
+        </Button>
       ) : (
-        <button
-          type="button"
-          className="secondary"
+        <Button
+          size="sm"
+          variant="subtle"
           onClick={() => {
             setDraft(task.title);
             setEditing(true);
           }}
         >
           Editar
-        </button>
+        </Button>
       )}
 
-      <button type="button" className="danger" onClick={() => onDelete(task.id)}>
+      <Button
+        size="sm"
+        colorPalette="red"
+        variant="subtle"
+        onClick={() => onDelete(task.id)}
+      >
         Remover
-      </button>
-    </li>
+      </Button>
+    </Flex>
   );
 }
