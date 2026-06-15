@@ -35,7 +35,7 @@ npm run build    # build do React em client/dist
 npm start        # produção: Express servindo o build (http://localhost:3000)
 ```
 
-Em dev, acesse **http://localhost:5173**.
+Em dev, acesse **<http://localhost:5173>**.
 
 ## Lint & Format (Biome)
 
