@@ -1,9 +1,14 @@
 # Connecta ISP
 
-Monolito web acadêmico: **React + Vite (TypeScript)** no front, **Express (TypeScript)** no back, persistência em **SQLite** (better-sqlite3). Um único `package.json` na raiz orquestra tudo.
+Monolito web acadêmico: **React + Vite (TypeScript)** no front, **Express (TypeScript)** no back, persistência em **SQLite**. Roda sobre o **Bun** (runtime + gerenciador de pacotes + test runner); o SQLite usa o driver nativo `bun:sqlite` (sem dependências). Um único `package.json` na raiz orquestra tudo.
+
+## Requisitos
+
+- [Bun](https://bun.sh) ≥ 1.2 (substitui Node, npm, tsx e vitest)
 
 ## Como funciona
 
+- **Runtime:** o backend é executado direto pelo Bun (`bun server/index.ts`), que roda TypeScript nativamente — sem passo de build no back. Em dev, `bun --watch` faz o hot reload.
 - **Desenvolvimento:** Vite (porta `5173`) e Express (porta `3000`) rodam separados. O Vite faz proxy de `/api` → Express, mantendo o hot reload do front.
 - **Produção:** o Express serve o build do React (`client/dist`) e responde a API sob `/api`. Rotas não-API caem no `index.html` (client-side routing). Uma porta só (`3000`).
 
@@ -13,7 +18,7 @@ Monolito web acadêmico: **React + Vite (TypeScript)** no front, **Express (Type
 server/                     # backend Express, organizado por feature
 ├── index.ts                # sobe o servidor
 ├── app.ts                  # middlewares + montagem das rotas
-├── config/db.ts            # conexão SQLite + criação da tabela
+├── config/db.ts            # conexão SQLite (bun:sqlite) + criação da tabela
 ├── middlewares/            # errorHandler centralizado
 └── modules/tasks/          # CRUD de exemplo (route → controller → service)
 
@@ -29,10 +34,11 @@ Fluxo backend: **route → controller → service** (o service tem regra de neg�
 ## Comandos
 
 ```bash
-npm install      # instala tudo (front + back)
-npm run dev      # Express + Vite em paralelo (dev, hot reload)
-npm run build    # build do React em client/dist
-npm start        # produção: Express servindo o build (http://localhost:3000)
+bun install      # instala tudo (front + back)
+bun run dev      # Express + Vite em paralelo (dev, hot reload)
+bun run build    # build do React em client/dist
+bun start        # produção: Express servindo o build (http://localhost:3000)
+bun test         # testes (bun test, SQLite em memória)
 ```
 
 Em dev, acesse **<http://localhost:5173>**.
@@ -40,9 +46,9 @@ Em dev, acesse **<http://localhost:5173>**.
 ## Lint & Format (Biome)
 
 ```bash
-npm run lint        # checa lint + formatação
-npm run lint:fix    # corrige o que for automático
-npm run format      # só formata
+bun run lint        # checa lint + formatação
+bun run lint:fix    # corrige o que for automático
+bun run format      # só formata
 ```
 
 ## API — `tasks`

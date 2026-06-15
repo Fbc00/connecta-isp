@@ -16,7 +16,6 @@ export function Root() {
           </Flex>
         </Container>
       </Box>
-
       <Outlet />
     </Box>
   );
