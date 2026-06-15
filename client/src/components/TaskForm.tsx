@@ -1,3 +1,4 @@
+import { Button, HStack, Input } from "@chakra-ui/react";
 import { type FormEvent, useState } from "react";
 
 interface Props {
@@ -16,14 +17,17 @@ export function TaskForm({ onCreate }: Props) {
   }
 
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Nova tarefa..."
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <button type="submit">Adicionar</button>
+    <form onSubmit={handleSubmit}>
+      <HStack mb={6}>
+        <Input
+          placeholder="Nova tarefa..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <Button type="submit" colorPalette="blue" flexShrink={0}>
+          Adicionar
+        </Button>
+      </HStack>
     </form>
   );
 }

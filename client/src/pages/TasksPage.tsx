@@ -1,3 +1,4 @@
+import { Container, Heading, Stack, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { TaskForm } from "../components/TaskForm";
 import { TaskItem } from "../components/TaskItem";
@@ -25,17 +26,23 @@ export function TasksPage() {
   }, []);
 
   return (
-    <main>
-      <h1>Tarefas</h1>
+    <Container maxW="lg" py={8}>
+      <Heading size="lg" mb={6}>
+        Tarefas
+      </Heading>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <Text color="red.500" mb={4}>
+          {error}
+        </Text>
+      )}
 
       <TaskForm onCreate={(title) => run(() => tasksApi.create(title))} />
 
       {tasks.length === 0 ? (
-        <p>Nenhuma tarefa ainda.</p>
+        <Text color="fg.muted">Nenhuma tarefa ainda.</Text>
       ) : (
-        <ul>
+        <Stack gap={2}>
           {tasks.map((task) => (
             <TaskItem
               key={task.id}
@@ -47,8 +54,8 @@ export function TasksPage() {
               onDelete={(id) => run(() => tasksApi.remove(id))}
             />
           ))}
-        </ul>
+        </Stack>
       )}
-    </main>
+    </Container>
   );
 }
