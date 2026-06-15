@@ -8,9 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DB_PATH ?? path.resolve(__dirname, "../../data.sqlite");
 
 export const db = new Database(dbPath, { create: true });
-db.exec("PRAGMA journal_mode = WAL");
+db.run("PRAGMA journal_mode = WAL");
 
-db.exec(`
+db.run(`
   CREATE TABLE IF NOT EXISTS tasks (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     title      TEXT    NOT NULL,
