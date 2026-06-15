@@ -1,4 +1,3 @@
-# Frontend: builda o React com Bun/Vite e serve o estático via nginx (+ proxy /api)
 FROM oven/bun:1.2-alpine AS build
 WORKDIR /app
 COPY package.json bun.lock ./

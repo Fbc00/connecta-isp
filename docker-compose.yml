@@ -1,5 +1,4 @@
 services:
-  # API Express sobre Bun — não exposta diretamente, só via nginx
   server:
     build:
       context: .
@@ -14,7 +13,6 @@ services:
       - "3000"
     restart: unless-stopped
 
-  # nginx: serve o build do React e faz proxy de /api → server
   nginx:
     build:
       context: .
