@@ -12,8 +12,8 @@ Monolito web acadêmico full-stack sobre **Nitro** (Node): o servidor Nitro exp�
 ## Como funciona
 
 - **Vite + plugin Nitro:** `vite.config.ts` carrega `nitro/vite`. O Vite cuida do client; o Nitro registra os handlers de `server/` e serve a SPA.
-- **API:** handlers em `server/api/**` → rotas `/api/**` (file-based). Lógica de dados em `server/utils/`.
-- **Banco:** connector `node-sqlite` configurado em `nitro.config.ts`; schema criado por um plugin Nitro na subida (`server/plugins/database.ts`).
+- **API:** handlers em `server/api/**` → rotas `/api/**` (file-based). Lógica de dados em `server/services/`.
+- **Banco:** connector `node-sqlite` configurado em `nitro.config.ts` (`server/database/db.ts`); schema criado por um plugin Nitro na subida (`server/plugins/database.ts`).
 - **SPA fallback:** o Nitro usa o `index.html` como template e o serve para qualquer rota não-API (client-side routing).
 - **Dev:** um único `vite` serve client (HMR) + API na mesma porta (`3000`).
 - **Produção:** `vite build` gera `.output/` (frontend + backend); roda com `node .output/server/index.mjs`.
