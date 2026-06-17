@@ -1,61 +1,42 @@
 # Connecta ISP
 
-Monolito web acadêmico: **React + Vite (TypeScript)** no front, **Express (TypeScript)** no back, persistência em **SQLite**. Roda sobre o **Bun** (runtime + gerenciador de pacotes + test runner); o SQLite usa o driver nativo `bun:sqlite` (sem dependências). Um único `package.json` na raiz orquestra tudo.
+Monolito web acadêmico: **React + Vite (TypeScript)** no front, **Express (TypeScript)** no back, persistência em **SQLite**. Roda sobre o **Bun** (runtime + gerenciador de pacotes + test runner); o SQLite usa o driver nativo `bun:sqlite` (sem dependências).
+
+O repositório é um **workspace Bun**: a raiz só orquestra (build, testes, lint); `client/` e `server/` têm suas próprias dependências.
 
 ## Requisitos
 
-- [Bun](https://bun.sh) ≥ 1.2 (substitui Node, npm, tsx e vitest)
+- [Bun](https://bun.sh) ≥ 1.2 — para desenvolvimento
+- [Docker](https://docs.docker.com/) + Compose — para rodar em produção
 
 ## Como funciona
 
 - **Runtime:** o backend é executado direto pelo Bun (`bun server/index.ts`), que roda TypeScript nativamente — sem passo de build no back. Em dev, `bun --watch` faz o hot reload.
 - **Desenvolvimento:** Vite (porta `5173`) e Express (porta `3000`) rodam separados. O Vite faz proxy de `/api` → Express, mantendo o hot reload do front.
-- **Produção:** o Express serve o build do React (`client/dist`) e responde a API sob `/api`. Rotas não-API caem no `index.html` (client-side routing). Uma porta só (`3000`).
+- **Produção (Docker):** o **nginx** serve o build do React e faz proxy de `/api` → o container do **server** (Express, API pura). O SQLite fica num volume persistente. Sobe tudo em `http://localhost:8080`.
 
-## Estrutura
-
-```
-server/                     # backend Express, organizado por feature
-├── index.ts                # sobe o servidor
-├── app.ts                  # middlewares + montagem das rotas
-├── config/db.ts            # conexão SQLite (bun:sqlite) + criação da tabela
-├── middlewares/            # errorHandler centralizado
-└── modules/tasks/          # CRUD de exemplo (route → controller → service)
-
-client/                     # frontend React, organizado por tipo
-└── src/
-    ├── pages/              # uma tela por arquivo
-    ├── components/         # componentes reutilizáveis
-    └── services/api.ts     # todas as chamadas à API centralizadas
-```
-
-Fluxo backend: **route → controller → service** (o service tem regra de negócio + acesso ao banco juntos).
-
-## Comandos
+## Desenvolvimento
 
 ```bash
-bun install      # instala tudo (front + back)
-bun run dev      # Express + Vite em paralelo (dev, hot reload)
+bun install      # instala todo o workspace (raiz + client + server)
+bun run dev      # Express + Vite em paralelo (hot reload)
 bun run build    # build do React em client/dist
-bun start        # produção: Express servindo o build (http://localhost:3000)
 bun test         # testes (bun test, SQLite em memória)
 ```
 
 Em dev, acesse **<http://localhost:5173>**.
 
-## Lint & Format (Biome)
+## Qualidade (Biome)
 
 ```bash
 bun run lint        # checa lint + formatação
 bun run lint:fix    # corrige o que for automático
 bun run format      # só formata
+bun run typecheck   # checagem de tipos (server + client)
 ```
 
-## API — `tasks`
+## Produção (Docker)
 
-| Método | Rota             | Descrição          |
-|--------|------------------|--------------------|
-| GET    | `/api/tasks`     | lista as tarefas   |
-| POST   | `/api/tasks`     | cria (`{ title }`) |
-| PUT    | `/api/tasks/:id` | edita (`{ title?, completed? }`) |
-| DELETE | `/api/tasks/:id` | remove             |
+```bash
+docker compose up --build    # nginx + server, acesse http://localhost:8080
+```
