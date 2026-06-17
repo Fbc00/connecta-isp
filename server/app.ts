@@ -6,6 +6,11 @@ export const app = express();
 
 app.use(express.json());
 
+// healthcheck dedicado (usado pelo docker-compose)
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use("/api/tasks", tasksRouter);
 
 // tratamento de erro.
