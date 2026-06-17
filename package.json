@@ -3,28 +3,37 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Monolito React (Vite) + Express + SQLite — raiz só orquestra build/test/lint",
-  "workspaces": [
-    "client",
-    "server"
-  ],
+  "description": "Monolito Nitro (Node) + React (Vite) + node:sqlite — Nitro serve a API e o client",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"bun run dev:server\" \"bun run dev:client\"",
-    "dev:server": "bun --watch server/index.ts",
-    "dev:client": "vite client",
-    "build": "vite build client",
-    "start": "NODE_ENV=production bun server/index.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
-    "test": "DB_PATH=:memory: bun test",
-    "test:watch": "DB_PATH=:memory: bun test --watch"
+    "typecheck": "nitro prepare && tsc --noEmit && tsc -p tsconfig.app.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.36.0",
+    "@emotion/react": "^11.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.17.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
     "@types/node": "^22.10.5",
-    "concurrently": "^9.1.2",
-    "typescript": "^5.7.3"
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^6.0.0",
+    "db0": "^0.3.4",
+    "nitro": "3.0.260610-beta",
+    "typescript": "^5.7.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0"
   }
 }

@@ -1,13 +1,12 @@
 {
+  "extends": "nitro/tsconfig",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["node", "bun"]
+    "types": ["node"]
   },
-  "include": ["server/**/*.ts"]
+  "include": [
+    "server/**/*.ts",
+    "nitro.config.ts",
+    "vite.config.ts",
+    ".nitro/types/**/*.d.ts"
+  ]
 }
