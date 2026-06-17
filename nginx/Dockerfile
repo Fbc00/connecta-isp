@@ -1,8 +1,10 @@
+# Builda o client (Vite) com Bun e serve o estático via nginx
+# build context = raiz do projeto
 FROM oven/bun:1.2-alpine AS build
 WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-COPY . .
+COPY client/package.json ./
+RUN bun install
+COPY client ./client
 RUN bun run build
 
 FROM nginx:1.27-alpine-slim

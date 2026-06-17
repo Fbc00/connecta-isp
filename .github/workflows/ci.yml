@@ -35,10 +35,8 @@ jobs:
         with:
           bun-version: latest
       - name: Install
-        run: bun install
+        run: bun install --frozen-lockfile
       - name: Typecheck
-        run: |
-          bunx tsc -p tsconfig.json --noEmit
-          bunx tsc -p client/tsconfig.json --noEmit
+        run: bun run typecheck
       - name: Test (bun)
         run: bun run test
