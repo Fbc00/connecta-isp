@@ -9,5 +9,5 @@ export default defineEventHandler(async (event) => {
     phone?: string;
     plan?: string;
   }>(event);
-  return createCustomer(useDatabase(), body);
+  return createCustomer(useDatabase(), body ?? {});
 });
