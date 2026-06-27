@@ -58,3 +58,7 @@ export async function getNpsSummary(db: Database): Promise<{
   const promoters = scores.filter((s) => s >= 9).length;
   const passives = scores.filter((s) => s >= 7 && s <= 8).length;
   const detractors = scores.filter((s) => s <= 6).length;
+  const nps = Math.round(((promoters - detractors) / total) * 100);
+
+  return { promoters, passives, detractors, nps };
+}
