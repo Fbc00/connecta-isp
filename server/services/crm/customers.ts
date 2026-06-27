@@ -11,13 +11,14 @@ export interface Customer {
   created_at: string;
 }
 
-const badRequest = (msg: string) => createError({ statusCode: 400, message: msg });
+const badRequest = (msg: string) =>
+  createError({ statusCode: 400, message: msg });
 const notFound = () =>
   createError({ statusCode: 404, message: "Cliente não encontrado" });
 
 export async function listCustomers(db: Database): Promise<Customer[]> {
-  const { rows } = await db.sql`SELECT * FROM customers ORDER BY id DESC`;
-  return rows as Customer[];
+  const result = await db.sql`SELECT * FROM customers ORDER BY id DESC`;
+  return result.rows as unknown as Customer[];
 }
 
 export async function createCustomer(
@@ -46,26 +47,24 @@ export async function createCustomer(
 export async function updateCustomer(
   db: Database,
   id: number,
-  data: {
-    name?: unknown;
-    email?: unknown;
-    phone?: unknown;
-    plan?: unknown;
-    status?: unknown;
-  },
+  data: { name?: unknown; email?: unknown; phone?: unknown; plan?: unknown; status?: unknown },
 ): Promise<Customer> {
   const existing = await findRow(db, id);
   if (!existing) throw notFound();
 
   const name =
-    typeof data.name === "string" && data.name.trim() ? data.name.trim() : existing.name;
+    typeof data.name === "string" && data.name.trim()
+      ? data.name.trim()
+      : existing.name;
   const email =
     typeof data.email === "string" && data.email.includes("@")
       ? data.email.trim().toLowerCase()
       : existing.email;
-  const phone = typeof data.phone === "string" ? data.phone.trim() : existing.phone;
+  const phone =
+    typeof data.phone === "string" ? data.phone.trim() : existing.phone;
   const plan = typeof data.plan === "string" ? data.plan : existing.plan;
-  const status = typeof data.status === "string" ? data.status : existing.status;
+  const status =
+    typeof data.status === "string" ? data.status : existing.status;
 
   await db.sql`
     UPDATE customers SET name=${name}, email=${email}, phone=${phone},
@@ -79,9 +78,12 @@ export async function deleteCustomer(db: Database, id: number): Promise<void> {
   if (!changes) throw notFound();
 }
 
-async function findRow(db: Database, id: number): Promise<Customer | undefined> {
-  const { rows } = await db.sql`SELECT * FROM customers WHERE id = ${id}`;
-  return (rows as Customer[])[0];
+async function findRow(
+  db: Database,
+  id: number,
+): Promise<Customer | undefined> {
+  const result = await db.sql`SELECT * FROM customers WHERE id = ${id}`;
+  return (result.rows as unknown as Customer[])[0];
 }
 
 async function getById(db: Database, id: number): Promise<Customer> {

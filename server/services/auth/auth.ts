@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import type { Database } from "db0";
 import { createError } from "h3";
+import { createHash } from "node:crypto";
 
 export interface User {
   id: number;
@@ -17,7 +17,8 @@ function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
 }
 
-const badRequest = (msg: string) => createError({ statusCode: 400, message: msg });
+const badRequest = (msg: string) =>
+  createError({ statusCode: 400, message: msg });
 const unauthorized = () =>
   createError({ statusCode: 401, message: "Credenciais inválidas" });
 
@@ -41,10 +42,10 @@ export async function register(
       INSERT INTO users (name, email, password_hash)
       VALUES (${name.trim()}, ${email.trim().toLowerCase()}, ${password_hash})
     `;
-    const { rows } = await db.sql`
+    const result = await db.sql`
       SELECT id, name, email, created_at FROM users WHERE id = ${Number(lastInsertRowid)}
     `;
-    return (rows as User[])[0];
+    return (result.rows as unknown as User[])[0];
   } catch {
     throw createError({ statusCode: 409, message: "E-mail já cadastrado" });
   }
@@ -58,12 +59,13 @@ export async function login(
   if (typeof email !== "string" || typeof password !== "string")
     throw badRequest("E-mail e senha são obrigatórios");
 
-  const { rows } = await db.sql`
+  const result = await db.sql`
     SELECT * FROM users WHERE email = ${email.trim().toLowerCase()}
   `;
-  const user = (rows as UserRow[])[0];
+  const user = (result.rows as unknown as UserRow[])[0];
 
-  if (!user || user.password_hash !== hashPassword(password)) throw unauthorized();
+  if (!user || user.password_hash !== hashPassword(password))
+    throw unauthorized();
 
   const { password_hash: _, ...safeUser } = user;
   return safeUser;
