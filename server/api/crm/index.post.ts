@@ -3,6 +3,6 @@ import { useDatabase } from "nitro/database";
 import { createCustomer } from "../../services/crm/customers";
 
 export default defineEventHandler(async (event) => {
-    const body = await readBody(event);
-    return createCustomer(useDatabase(), body);
+  const body = await readBody(event);
+  return createCustomer(useDatabase(), body);
 });
