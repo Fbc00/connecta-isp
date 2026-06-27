@@ -1,6 +1,6 @@
+import { createHash } from "node:crypto";
 import type { Database } from "db0";
 import { createError } from "h3";
-import { createHash } from "node:crypto";
 
 export interface User {
   id: number;
@@ -17,8 +17,7 @@ function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
 }
 
-const badRequest = (msg: string) =>
-  createError({ statusCode: 400, message: msg });
+const badRequest = (msg: string) => createError({ statusCode: 400, message: msg });
 const unauthorized = () =>
   createError({ statusCode: 401, message: "Credenciais inválidas" });
 
@@ -64,8 +63,7 @@ export async function login(
   `;
   const user = (result.rows as unknown as UserRow[])[0];
 
-  if (!user || user.password_hash !== hashPassword(password))
-    throw unauthorized();
+  if (!user || user.password_hash !== hashPassword(password)) throw unauthorized();
 
   const { password_hash: _, ...safeUser } = user;
   return safeUser;
