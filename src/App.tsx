@@ -1,4 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Home } from "./pages/Home";
 import { Root } from "./pages/Root";
 
 const router = createBrowserRouter([
@@ -8,7 +10,12 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        lazy: () => import("./pages/Home").then((m) => ({ Component: m.Home })),
+        // rota de tarefas exige sessão
+        element: (
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "auth",

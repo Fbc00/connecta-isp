@@ -3,6 +3,7 @@ import { createError } from "h3";
 
 export interface NpsResponse {
   id: number;
+  company_id: number;
   customer_id: number;
   score: number;
   comment: string | null;
@@ -11,13 +12,20 @@ export interface NpsResponse {
 
 const badRequest = (msg: string) => createError({ statusCode: 400, message: msg });
 
-export async function listResponses(db: Database): Promise<NpsResponse[]> {
-  const result = await db.sql`SELECT * FROM nps_responses ORDER BY id DESC`;
+// Todas as queries são escopadas por companyId — isolamento multi-tenant.
+export async function listResponses(
+  db: Database,
+  companyId: number,
+): Promise<NpsResponse[]> {
+  const result = await db.sql`
+    SELECT * FROM nps_responses WHERE company_id = ${companyId} ORDER BY id DESC
+  `;
   return result.rows as unknown as NpsResponse[];
 }
 
 export async function createResponse(
   db: Database,
+  companyId: number,
   data: { customer_id: unknown; score: unknown; comment?: unknown },
 ): Promise<NpsResponse> {
   if (typeof data.customer_id !== "number" || data.customer_id <= 0)
@@ -25,11 +33,18 @@ export async function createResponse(
   if (typeof data.score !== "number" || data.score < 0 || data.score > 10)
     throw badRequest("Score deve ser entre 0 e 10");
 
+  // o cliente precisa existir e pertencer à mesma empresa
+  const owner = await db.sql`
+    SELECT id FROM customers WHERE id = ${data.customer_id} AND company_id = ${companyId}
+  `;
+  if ((owner.rows as unknown[]).length === 0)
+    throw createError({ statusCode: 404, message: "Cliente não encontrado" });
+
   const comment = typeof data.comment === "string" ? data.comment.trim() : null;
 
   const { lastInsertRowid } = await db.sql`
-    INSERT INTO nps_responses (customer_id, score, comment)
-    VALUES (${data.customer_id}, ${data.score}, ${comment})
+    INSERT INTO nps_responses (company_id, customer_id, score, comment)
+    VALUES (${companyId}, ${data.customer_id}, ${data.score}, ${comment})
   `;
 
   const result = await db.sql`
@@ -38,13 +53,18 @@ export async function createResponse(
   return (result.rows as unknown as NpsResponse[])[0];
 }
 
-export async function getNpsSummary(db: Database): Promise<{
+export async function getNpsSummary(
+  db: Database,
+  companyId: number,
+): Promise<{
   promoters: number;
   passives: number;
   detractors: number;
   nps: number;
 }> {
-  const result = await db.sql`SELECT score FROM nps_responses`;
+  const result = await db.sql`
+    SELECT score FROM nps_responses WHERE company_id = ${companyId}
+  `;
   const scores = (result.rows as unknown as { score: number }[]).map((r) => r.score);
 
   const total = scores.length;
