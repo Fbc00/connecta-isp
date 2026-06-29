@@ -1,4 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Home } from "./pages/Home";
 import { Root } from "./pages/Root";
 
 const router = createBrowserRouter([
@@ -8,7 +10,11 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        lazy: () => import("./pages/Home").then((m) => ({ Component: m.Home })),
+        element: (
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "auth",
@@ -18,11 +24,6 @@ const router = createBrowserRouter([
           {
             path: "login",
             lazy: () => import("./pages/Login").then((m) => ({ Component: m.Login })),
-          },
-          {
-            path: "register",
-            lazy: () =>
-              import("./pages/Register").then((m) => ({ Component: m.Register })),
           },
         ],
       },

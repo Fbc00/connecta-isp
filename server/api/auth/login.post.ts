@@ -1,9 +1,13 @@
 import { defineEventHandler, readBody } from "h3";
 import { useDatabase } from "nitro/database";
-import { login } from "../../services/auth/auth";
+import { authenticate, createSession } from "../../services/auth/auth";
+import { setSessionCookie } from "../../utils/session";
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{ email?: string; password?: string }>(event);
   const db = useDatabase();
-  return login(db, body?.email, body?.password);
+  const body = await readBody<{ email?: unknown; password?: unknown }>(event);
+  const user = await authenticate(db, body?.email, body?.password);
+  const token = await createSession(db, user.id);
+  setSessionCookie(event, token);
+  return { user };
 });

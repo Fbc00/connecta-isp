@@ -1,23 +1,21 @@
-import { Container, Flex, Heading, Link } from "@chakra-ui/react";
-import { Outlet, Link as RouterLink } from "react-router-dom";
+import { Flex, Stack } from "@chakra-ui/react";
+import { Outlet } from "react-router-dom";
+import { Brand } from "../components/Brand";
 
 export function AuthLayout() {
   return (
-    <Container maxW="sm" py={10}>
-      <Heading size="md" mb={6} textAlign="center">
-        Connecta ISP
-      </Heading>
-
-      <Flex gap={4} justify="center" mb={6}>
-        <Link asChild>
-          <RouterLink to="/auth/login">Login</RouterLink>
-        </Link>
-        <Link asChild>
-          <RouterLink to="/auth/register">Registrar</RouterLink>
-        </Link>
-      </Flex>
-
-      <Outlet />
-    </Container>
+    <Flex flex="1" align="center" justify="center" px={5} py={12}>
+      <Stack
+        gap={8}
+        w="full"
+        maxW="380px"
+        animation="fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both"
+      >
+        <Flex justify="center">
+          <Brand size="lg" />
+        </Flex>
+        <Outlet />
+      </Stack>
+    </Flex>
   );
 }
