@@ -11,7 +11,7 @@ import { authApi, type RegisterInput, type User } from "../services/api";
 
 interface AuthContextValue {
   user: User | null;
-  loading: boolean; // true durante o check inicial da sessão
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ao montar, tenta restaurar a sessão via cookie httpOnly
   useEffect(() => {
     authApi
       .whoami()

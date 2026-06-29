@@ -12,7 +12,6 @@ export interface NpsResponse {
 
 const badRequest = (msg: string) => createError({ statusCode: 400, message: msg });
 
-// Todas as queries são escopadas por companyId — isolamento multi-tenant.
 export async function listResponses(
   db: Database,
   companyId: number,
@@ -33,7 +32,6 @@ export async function createResponse(
   if (typeof data.score !== "number" || data.score < 0 || data.score > 10)
     throw badRequest("Score deve ser entre 0 e 10");
 
-  // o cliente precisa existir e pertencer à mesma empresa
   const owner = await db.sql`
     SELECT id FROM customers WHERE id = ${data.customer_id} AND company_id = ${companyId}
   `;

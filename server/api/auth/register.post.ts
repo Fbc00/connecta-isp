@@ -12,7 +12,6 @@ export default defineEventHandler(async (event) => {
     email: body?.email,
     password: body?.password,
   });
-  // já loga o usuário recém-criado
   const token = await createSession(db, user.id);
   setSessionCookie(event, token);
   setResponseStatus(event, 201);

@@ -16,7 +16,6 @@ const badRequest = (msg: string) => createError({ statusCode: 400, message: msg 
 const notFound = () =>
   createError({ statusCode: 404, message: "Cliente não encontrado" });
 
-// Todas as queries são escopadas por companyId — isolamento multi-tenant.
 export async function listCustomers(
   db: Database,
   companyId: number,

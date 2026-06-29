@@ -23,8 +23,6 @@ export function getSessionToken(event: H3Event): string | undefined {
   return getCookie(event, SESSION_COOKIE);
 }
 
-// tenant guard: resolve o usuário da sessão ou lança 401.
-// O company_id retornado é a chave de isolamento usada em todas as queries.
 export async function requireUser(event: H3Event): Promise<User> {
   // biome-ignore lint/correctness/useHookAtTopLevel: useDatabase é util do Nitro, não um hook React
   const user = await getSessionUser(useDatabase(), getSessionToken(event));
@@ -32,7 +30,6 @@ export async function requireUser(event: H3Event): Promise<User> {
   return user;
 }
 
-// RBAC guard: exige um nível mínimo de role
 export async function requireRole(event: H3Event, min: Role): Promise<User> {
   const user = await requireUser(event);
   if (!hasRole(user.role, min)) {

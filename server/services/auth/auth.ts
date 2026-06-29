@@ -2,8 +2,6 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { Database } from "db0";
 import { createError } from "h3";
 
-// ── RBAC ────────────────────────────────────────────────────────────────────
-// hierarquia simples: owner > admin > member. requireRole compara o nível.
 export const ROLES = ["member", "admin", "owner"] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -11,12 +9,10 @@ export function roleRank(role: Role): number {
   return ROLES.indexOf(role);
 }
 
-// true se `role` satisfaz o nível mínimo `min`
 export function hasRole(role: Role, min: Role): boolean {
   return roleRank(role) >= roleRank(min);
 }
 
-// ── tipos ─────────────────────────────────────────────────────────────────
 export interface User {
   id: number;
   company_id: number;
@@ -37,7 +33,6 @@ const badRequest = (msg: string) => createError({ statusCode: 400, message: msg 
 const unauthorized = (msg = "Não autenticado") =>
   createError({ statusCode: 401, message: msg });
 
-// ── hashing de senha (node:crypto scrypt, sem dependências) ──────────────────
 export function hashPassword(password: string): string {
   const salt = randomBytes(16);
   const hash = scryptSync(password, salt, 64);
@@ -57,7 +52,6 @@ function publicUser(row: UserRow | User): User {
   return { id, company_id, name, email, role, created_at };
 }
 
-// ── register: cria empresa + usuário owner ───────────────────────────────────
 export interface RegisterInput {
   companyName: unknown;
   name: unknown;
@@ -83,7 +77,6 @@ export async function register(db: Database, input: RegisterInput): Promise<User
     INSERT INTO companies (name) VALUES (${companyName})
   `;
 
-  // primeiro usuário da empresa é o owner
   const { lastInsertRowid: userId } = await db.sql`
     INSERT INTO users (company_id, name, email, password_hash, role)
     VALUES (${Number(companyId)}, ${name}, ${email}, ${hashPassword(password)}, 'owner')
@@ -94,7 +87,6 @@ export async function register(db: Database, input: RegisterInput): Promise<User
   return publicUser(user);
 }
 
-// ── autenticação ─────────────────────────────────────────────────────────────
 export async function authenticate(
   db: Database,
   email: unknown,
@@ -102,14 +94,12 @@ export async function authenticate(
 ): Promise<User> {
   const row = await findUserByEmail(db, str(email).toLowerCase());
   const pass = typeof password === "string" ? password : "";
-  // mensagem genérica p/ não revelar se o e-mail existe
   if (!row || !verifyPassword(pass, row.password_hash)) {
     throw unauthorized("E-mail ou senha inválidos");
   }
   return publicUser(row);
 }
 
-// ── sessões ──────────────────────────────────────────────────────────────────
 export async function createSession(db: Database, userId: number): Promise<string> {
   const token = randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + SESSION_TTL_DAYS * 86_400_000).toISOString();
@@ -142,7 +132,6 @@ export async function deleteSession(
   await db.sql`DELETE FROM sessions WHERE token = ${token}`;
 }
 
-// ── helpers internos ──────────────────────────────────────────────────────────
 async function findUserByEmail(
   db: Database,
   email: string,

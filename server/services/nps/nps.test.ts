@@ -32,17 +32,16 @@ describe("nps", () => {
   });
 
   it("calcula NPS escopado por empresa", async () => {
-    await createResponse(db, CO, { customer_id: custCO, score: 10 }); // promotor
-    await createResponse(db, CO, { customer_id: custCO, score: 3 }); // detrator
-    await createResponse(db, OTHER, { customer_id: custOTHER, score: 9 }); // outra empresa
+    await createResponse(db, CO, { customer_id: custCO, score: 10 });
+    await createResponse(db, CO, { customer_id: custCO, score: 3 });
+    await createResponse(db, OTHER, { customer_id: custOTHER, score: 9 });
 
     expect(await listResponses(db, CO)).toHaveLength(2);
     const sum = await getNpsSummary(db, CO);
     expect(sum.promoters).toBe(1);
     expect(sum.detractors).toBe(1);
-    expect(sum.nps).toBe(0); // (1-1)/2 * 100
+    expect(sum.nps).toBe(0);
 
-    // empresa OTHER isolada
     expect(await listResponses(db, OTHER)).toHaveLength(1);
     expect((await getNpsSummary(db, OTHER)).nps).toBe(100);
   });

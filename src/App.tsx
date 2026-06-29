@@ -10,7 +10,6 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        // rota de tarefas exige sessão
         element: (
           <ProtectedRoute>
             <Home />
@@ -25,11 +24,6 @@ const router = createBrowserRouter([
           {
             path: "login",
             lazy: () => import("./pages/Login").then((m) => ({ Component: m.Login })),
-          },
-          {
-            path: "register",
-            lazy: () =>
-              import("./pages/Register").then((m) => ({ Component: m.Register })),
           },
         ],
       },

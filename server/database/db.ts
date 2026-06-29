@@ -1,7 +1,6 @@
 import type { Database } from "db0";
 
 export async function initSchema(db: Database): Promise<void> {
-  // empresas (tenants) — raiz do isolamento multi-tenant
   await db.sql`
     CREATE TABLE IF NOT EXISTS companies (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10,7 +9,6 @@ export async function initSchema(db: Database): Promise<void> {
     )
   `;
 
-  // usuários — sempre pertencem a uma empresa; role para RBAC
   await db.sql`
     CREATE TABLE IF NOT EXISTS users (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +21,6 @@ export async function initSchema(db: Database): Promise<void> {
     )
   `;
 
-  // sessões — token de cookie httpOnly -> usuário, com expiração
   await db.sql`
     CREATE TABLE IF NOT EXISTS sessions (
       token      TEXT    PRIMARY KEY,
@@ -33,7 +30,6 @@ export async function initSchema(db: Database): Promise<void> {
     )
   `;
 
-  // clientes (CRM) — escopados por empresa; e-mail único dentro da empresa
   await db.sql`
     CREATE TABLE IF NOT EXISTS customers (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,7 +44,6 @@ export async function initSchema(db: Database): Promise<void> {
     )
   `;
 
-  // respostas de NPS — escopadas por empresa; cliente pertence à mesma empresa
   await db.sql`
     CREATE TABLE IF NOT EXISTS nps_responses (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,

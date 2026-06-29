@@ -41,7 +41,6 @@ describe("customers", () => {
     expect(await listCustomers(db, CO)).toHaveLength(1);
     expect(await listCustomers(db, OTHER)).toHaveLength(1);
 
-    // não dá pra atualizar/remover cliente de outra empresa
     await expect(
       updateCustomer(db, OTHER, mine.id, { name: "hack" }),
     ).rejects.toThrowError(/não encontrado/i);
