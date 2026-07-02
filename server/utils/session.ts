@@ -37,3 +37,20 @@ export async function requireRole(event: H3Event, min: Role): Promise<User> {
   }
   return user;
 }
+
+/**
+ * Exige um usuário vinculado a uma empresa (exclui super_admin, que não tem tenant).
+ * Retorna o `companyId` já garantido como number para os serviços de domínio.
+ */
+export async function requireCompany(
+  event: H3Event,
+): Promise<{ user: User; companyId: number }> {
+  const user = await requireUser(event);
+  if (user.company_id == null) {
+    throw createError({
+      statusCode: 403,
+      message: "Ação disponível apenas para usuários de empresa",
+    });
+  }
+  return { user, companyId: user.company_id };
+}

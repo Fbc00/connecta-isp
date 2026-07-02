@@ -1,6 +1,7 @@
 import { Box, Button, Field, Input, Stack, Text } from "@chakra-ui/react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { TextLink } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 
 const labelProps = {
@@ -123,6 +124,13 @@ export function Login() {
           >
             Entrar
           </Button>
+
+          <Text fontSize="sm" color="#71717A" textAlign="center">
+            Não tem conta?{" "}
+            <TextLink to="/auth/register" _hover={{ textDecoration: "underline" }}>
+              Criar agora
+            </TextLink>
+          </Text>
         </Stack>
       </form>
     </Box>
