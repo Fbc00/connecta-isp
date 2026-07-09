@@ -1,6 +1,6 @@
 import { defineEventHandler } from "h3";
 import { useDatabase } from "nitro/database";
-import { getSurveyScore, listSurveys } from "../../../services/nps/surveys";
+import { getSurveyQuestionScores, listSurveys } from "../../../services/nps/surveys";
 import { requireCompany } from "../../../utils/session";
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   return Promise.all(
     surveys.map(async (s) => ({
       ...s,
-      score: await getSurveyScore(db, companyId, s.id),
+      questions: await getSurveyQuestionScores(db, companyId, s.id),
     })),
   );
 });
