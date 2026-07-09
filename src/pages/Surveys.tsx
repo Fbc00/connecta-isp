@@ -13,7 +13,7 @@ import {
 import { type Contact, crmApi } from "../services/crmApi";
 import { npsApi, type Survey } from "../services/npsApi";
 
-function ScoreBar({ score }: { score: Survey["score"] }) {
+function ScoreBar({ score }: { score: Survey["questions"][number] }) {
   const total = score.total || 1;
   const seg = [
     { n: score.detractors, color: "#DC2626" },
@@ -146,7 +146,8 @@ export function Surveys() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", question: "" });
+  const [title, setTitle] = useState("");
+  const [questions, setQuestions] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
   const [inviteFor, setInviteFor] = useState<number | null>(null);
 
@@ -167,8 +168,10 @@ export function Surveys() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await npsApi.createSurvey(form);
-      setForm({ title: "", question: "" });
+      const cleaned = questions.map((q) => q.trim()).filter(Boolean);
+      await npsApi.createSurvey({ title, questions: cleaned });
+      setTitle("");
+      setQuestions([""]);
       setShowForm(false);
       await load();
     } catch (err) {
@@ -214,17 +217,51 @@ export function Surveys() {
             <Stack gap={4}>
               <TextField
                 label="Título"
-                value={form.title}
-                onChange={(v) => setForm({ ...form, title: v })}
+                value={title}
+                onChange={setTitle}
                 placeholder="Satisfação Q3"
                 required
               />
-              <TextField
-                label="Pergunta (opcional)"
-                value={form.question}
-                onChange={(v) => setForm({ ...form, question: v })}
-                placeholder="De 0 a 10, o quanto você recomendaria a gente?"
-              />
+              <Stack gap={2}>
+                <Text fontSize="sm" fontWeight="500" color="#52525B">
+                  Perguntas (escala 0-10)
+                </Text>
+                {questions.map((q, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: lista de perguntas do form ainda não tem id estável antes de salvar
+                  <Flex key={i} gap={2} align="center">
+                    <Box flex={1}>
+                      <TextField
+                        label=""
+                        value={q}
+                        onChange={(v) =>
+                          setQuestions((prev) =>
+                            prev.map((item, idx) => (idx === i ? v : item)),
+                          )
+                        }
+                        placeholder="De 0 a 10, o quanto você recomendaria a gente?"
+                      />
+                    </Box>
+                    {questions.length > 1 && (
+                      <GhostButton
+                        type="button"
+                        onClick={() =>
+                          setQuestions((prev) => prev.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        Remover
+                      </GhostButton>
+                    )}
+                  </Flex>
+                ))}
+                <Box>
+                  <GhostButton
+                    type="button"
+                    onClick={() => setQuestions((prev) => [...prev, ""])}
+                  >
+                    + Adicionar pergunta
+                  </GhostButton>
+                </Box>
+              </Stack>
               <Flex justify="flex-end">
                 <PrimaryButton type="submit" loading={submitting}>
                   Criar pesquisa
@@ -247,50 +284,54 @@ export function Surveys() {
         <Stack gap={4}>
           {surveys.map((s) => (
             <Card key={s.id} p={6}>
-              <Flex align="flex-start" gap={4}>
-                <Box flex={1} minW={0}>
-                  <Flex align="center" gap={2.5} mb={1}>
-                    <Text fontSize="md" fontWeight="600" color="#1A1A1E">
-                      {s.title}
-                    </Text>
-                    <Badge tone={s.status === "active" ? "green" : "gray"}>
-                      {s.status === "active" ? "Ativa" : "Fechada"}
-                    </Badge>
-                  </Flex>
-                  <Text fontSize="sm" color="#71717A">
-                    {s.question}
-                  </Text>
-                </Box>
-                <Box textAlign="right" flexShrink={0}>
-                  <Text
-                    fontFamily="heading"
-                    fontSize="3xl"
-                    fontWeight="600"
-                    color="#1A1A1E"
-                    lineHeight="1"
-                  >
-                    {s.score.nps}
-                  </Text>
-                  <Text fontSize="xs" color="#A1A1AA">
-                    NPS · {s.score.total} resp.
-                  </Text>
-                </Box>
+              <Flex align="center" gap={2.5} mb={1}>
+                <Text fontSize="md" fontWeight="600" color="#1A1A1E">
+                  {s.title}
+                </Text>
+                <Badge tone={s.status === "active" ? "green" : "gray"}>
+                  {s.status === "active" ? "Ativa" : "Fechada"}
+                </Badge>
               </Flex>
 
-              <Box mt={4}>
-                <ScoreBar score={s.score} />
-                <Flex gap={4} mt={2}>
-                  <Text fontSize="xs" color="#059669">
-                    ● {s.score.promoters} promotores
-                  </Text>
-                  <Text fontSize="xs" color="#D97706">
-                    ● {s.score.passives} neutros
-                  </Text>
-                  <Text fontSize="xs" color="#DC2626">
-                    ● {s.score.detractors} detratores
-                  </Text>
-                </Flex>
-              </Box>
+              <Stack gap={4} mt={4}>
+                {s.questions.map((q) => (
+                  <Box key={q.id}>
+                    <Flex align="flex-start" gap={4}>
+                      <Text fontSize="sm" color="#52525B" flex={1} minW={0}>
+                        {q.text}
+                      </Text>
+                      <Box textAlign="right" flexShrink={0}>
+                        <Text
+                          fontFamily="heading"
+                          fontSize="2xl"
+                          fontWeight="600"
+                          color="#1A1A1E"
+                          lineHeight="1"
+                        >
+                          {q.nps}
+                        </Text>
+                        <Text fontSize="xs" color="#A1A1AA">
+                          NPS · {q.total} resp.
+                        </Text>
+                      </Box>
+                    </Flex>
+                    <Box mt={2}>
+                      <ScoreBar score={q} />
+                      <Flex gap={4} mt={2}>
+                        <Text fontSize="xs" color="#059669">
+                          ● {q.promoters} promotores
+                        </Text>
+                        <Text fontSize="xs" color="#D97706">
+                          ● {q.passives} neutros
+                        </Text>
+                        <Text fontSize="xs" color="#DC2626">
+                          ● {q.detractors} detratores
+                        </Text>
+                      </Flex>
+                    </Box>
+                  </Box>
+                ))}
+              </Stack>
 
               <Flex gap={2} mt={4}>
                 <GhostButton
