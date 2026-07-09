@@ -1,7 +1,7 @@
 import { createDatabase } from "db0";
 import nodeSqlite from "db0/connectors/node-sqlite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { migrateSchema } from "./db";
+import { initSchema, migrateSchema } from "./db";
 
 // Simula o schema ANTIGO (Fase 0) e valida que migrateSchema atualiza sem perder dados.
 const db = createDatabase(nodeSqlite({ name: ":memory:" }));
@@ -83,5 +83,44 @@ describe("migrateSchema (schema antigo -> novo)", () => {
     await migrateSchema(db);
     const users = await db.sql`SELECT COUNT(*) AS n FROM users`;
     expect(Number((users.rows as { n: number }[])[0].n)).toBe(2);
+  });
+});
+
+describe("migração nps_questions", () => {
+  it("cria pergunta a partir de survey legado e faz backfill das respostas", async () => {
+    const db = createDatabase(nodeSqlite({ name: ":memory:" }));
+    // Simula banco legado: survey com coluna question e uma resposta sem question_id.
+    await db.sql`CREATE TABLE companies (id INTEGER PRIMARY KEY, name TEXT)`;
+    await db.sql`INSERT INTO companies (id, name) VALUES (1, 'Acme')`;
+    await db.sql`
+      CREATE TABLE nps_surveys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER, title TEXT,
+        question TEXT DEFAULT 'Pergunta legada?', status TEXT DEFAULT 'active',
+        created_at TEXT DEFAULT (datetime('now')))`;
+    await db.sql`INSERT INTO nps_surveys (company_id, title, question) VALUES (1, 'Legada', 'Pergunta legada?')`;
+    await db.sql`
+      CREATE TABLE nps_responses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER, customer_id INTEGER,
+        survey_id INTEGER, invite_id INTEGER, score INTEGER, comment TEXT,
+        created_at TEXT DEFAULT (datetime('now')))`;
+    await db.sql`INSERT INTO nps_responses (company_id, customer_id, survey_id, score) VALUES (1, 1, 1, 9)`;
+
+    await initSchema(db); // roda migrateSchema idempotente sobre as tabelas acima
+
+    const q = await db.sql`SELECT * FROM nps_questions WHERE survey_id = 1`;
+    const questions = q.rows as { id: number; text: string; position: number }[];
+    expect(questions).toHaveLength(1);
+    expect(questions[0].text).toBe("Pergunta legada?");
+    expect(questions[0].position).toBe(0);
+
+    const r = await db.sql`SELECT question_id FROM nps_responses WHERE survey_id = 1`;
+    expect((r.rows as { question_id: number }[])[0].question_id).toBe(questions[0].id);
+
+    // Idempotência: rodar de novo não duplica perguntas.
+    await migrateSchema(db);
+    const again =
+      await db.sql`SELECT COUNT(*) AS n FROM nps_questions WHERE survey_id = 1`;
+    expect(Number((again.rows as { n: number }[])[0].n)).toBe(1);
+    db.dispose();
   });
 });

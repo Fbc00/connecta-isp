@@ -85,6 +85,17 @@ export async function initSchema(db: Database): Promise<void> {
   `;
 
   await db.sql`
+    CREATE TABLE IF NOT EXISTS nps_questions (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL REFERENCES companies(id),
+      survey_id  INTEGER NOT NULL REFERENCES nps_surveys(id),
+      text       TEXT    NOT NULL,
+      position   INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `;
+
+  await db.sql`
     CREATE TABLE IF NOT EXISTS nps_invites (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id  INTEGER NOT NULL REFERENCES companies(id),
@@ -135,6 +146,8 @@ export async function migrateSchema(db: Database): Promise<void> {
   await addColumnIfMissing(db, "customers", "tags", "TEXT NOT NULL DEFAULT ''");
   await addColumnIfMissing(db, "nps_responses", "survey_id", "INTEGER");
   await addColumnIfMissing(db, "nps_responses", "invite_id", "INTEGER");
+  await addColumnIfMissing(db, "nps_responses", "question_id", "INTEGER");
+  await backfillNpsQuestions(db);
 
   // users.company_id nasceu NOT NULL (sem suporte a super_admin). Reconstrói a
   // tabela para torná-la nullable, uma única vez, seguindo o padrão seguro do
@@ -188,4 +201,36 @@ async function addColumnIfMissing(
   if (cols.some((c) => c.name === column)) return;
   // Nomes de tabela/coluna são literais internos (não vêm de input do usuário).
   await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+/**
+ * Cria uma pergunta (position 0) a partir de nps_surveys.question para surveys
+ * que ainda não têm perguntas, e aponta as respostas antigas para ela.
+ * Idempotente: só age sobre surveys sem perguntas.
+ */
+async function backfillNpsQuestions(db: Database): Promise<void> {
+  // Bancos muito antigos (pré-Fase NPS) não têm nps_surveys/nps_questions ainda.
+  const surveyCols = await tableColumns(db, "nps_surveys");
+  if (surveyCols.length === 0) return;
+
+  const { rows } = await db.sql`
+    SELECT s.id, s.company_id, s.question
+    FROM nps_surveys s
+    WHERE NOT EXISTS (SELECT 1 FROM nps_questions q WHERE q.survey_id = s.id)
+  `;
+  const surveys = rows as unknown as {
+    id: number;
+    company_id: number;
+    question: string;
+  }[];
+  for (const s of surveys) {
+    const { lastInsertRowid } = await db.sql`
+      INSERT INTO nps_questions (company_id, survey_id, text, position)
+      VALUES (${s.company_id}, ${s.id}, ${s.question}, 0)
+    `;
+    await db.sql`
+      UPDATE nps_responses SET question_id = ${Number(lastInsertRowid)}
+      WHERE survey_id = ${s.id} AND question_id IS NULL
+    `;
+  }
 }

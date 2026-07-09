@@ -1,6 +1,9 @@
 import { api } from "./api";
 
-export interface SurveyScore {
+export interface QuestionScore {
+  id: number;
+  text: string;
+  position: number;
   promoters: number;
   passives: number;
   detractors: number;
@@ -15,13 +18,24 @@ export interface Survey {
   question: string;
   status: string;
   created_at: string;
-  score: SurveyScore;
+  questions: QuestionScore[];
 }
 
 export interface PublicInvite {
   token: string;
   status: string;
-  survey: { title: string; question: string; status: string };
+  survey: {
+    title: string;
+    question: string;
+    status: string;
+    questions: { id: number; text: string }[];
+  };
+}
+
+export interface PublicAnswer {
+  question_id: number;
+  score: number;
+  comment?: string;
 }
 
 export interface DispatchResult {
@@ -32,7 +46,7 @@ export interface DispatchResult {
 
 export const npsApi = {
   listSurveys: () => api.get<Survey[]>("/nps/surveys"),
-  createSurvey: (input: { title: string; question?: string }) =>
+  createSurvey: (input: { title: string; questions: string[] }) =>
     api.post<Survey>("/nps/surveys", input),
   setStatus: (id: number, status: "active" | "closed") =>
     api.patch<Survey>(`/nps/surveys/${id}`, { status }),
@@ -45,6 +59,6 @@ export const npsApi = {
 
 export const npsPublicApi = {
   getInvite: (token: string) => api.get<PublicInvite>(`/nps/public/${token}`),
-  respond: (token: string, score: number, comment: string) =>
-    api.post<{ ok: true }>(`/nps/public/${token}`, { score, comment }),
+  respond: (token: string, answers: PublicAnswer[]) =>
+    api.post<{ ok: true }>(`/nps/public/${token}`, { answers }),
 };
