@@ -49,10 +49,14 @@ function normalizeQuestions(data: { questions?: unknown; question?: unknown }): 
   return [DEFAULT_QUESTION];
 }
 
-async function questionsOf(db: Database, surveyId: number): Promise<Question[]> {
+async function questionsOf(
+  db: Database,
+  companyId: number,
+  surveyId: number,
+): Promise<Question[]> {
   const { rows } = await db.sql`
     SELECT id, text, position FROM nps_questions
-    WHERE survey_id = ${surveyId} ORDER BY position, id
+    WHERE survey_id = ${surveyId} AND company_id = ${companyId} ORDER BY position, id
   `;
   return rows as unknown as Question[];
 }
@@ -62,7 +66,7 @@ export async function listSurveys(db: Database, companyId: number): Promise<Surv
     SELECT * FROM nps_surveys WHERE company_id = ${companyId} ORDER BY id DESC
   `;
   const surveys = rows as unknown as Survey[];
-  for (const s of surveys) s.questions = await questionsOf(db, s.id);
+  for (const s of surveys) s.questions = await questionsOf(db, companyId, s.id);
   return surveys;
 }
 
@@ -76,7 +80,7 @@ export async function getSurvey(
   `;
   const row = (rows as unknown as Survey[])[0];
   if (!row) throw notFound();
-  row.questions = await questionsOf(db, row.id);
+  row.questions = await questionsOf(db, companyId, row.id);
   return row;
 }
 
@@ -134,7 +138,7 @@ export async function getSurveyQuestionScores(
   companyId: number,
   surveyId: number,
 ): Promise<QuestionScore[]> {
-  const questions = await questionsOf(db, surveyId);
+  const questions = await questionsOf(db, companyId, surveyId);
   const result: QuestionScore[] = [];
   for (const q of questions) {
     const { rows } = await db.sql`
