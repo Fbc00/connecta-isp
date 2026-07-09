@@ -1,111 +1,108 @@
-import { Box, Container, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Flex, SimpleGrid, Spinner, Stack, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { Card, Page } from "../components/Page";
 import { useAuth } from "../context/AuthContext";
+import { type DashboardSummary, dashboardApi } from "../services/dashboardApi";
 
-const modules = [
-  { tag: "CRM", name: "Clientes", desc: "Cadastro, planos e status dos assinantes." },
-  { tag: "NPS", name: "Satisfação", desc: "Pesquisas e índice NPS da operação." },
-  { tag: "Equipe", name: "Acessos", desc: "Usuários e papéis dentro da empresa." },
-];
-
-function MetaRow({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <Flex justify="space-between" align="center" gap={4}>
-      <Text fontSize="sm" color="#A1A1AA">
-        {label}
+    <Card p={5}>
+      <Text fontSize="xs" fontWeight="600" letterSpacing="0.04em" color="#A1A1AA">
+        {label.toUpperCase()}
       </Text>
-      <Text fontSize="sm" color="#27272A" fontWeight="500" textAlign="right">
+      <Text
+        fontFamily="heading"
+        fontSize="3xl"
+        fontWeight="600"
+        letterSpacing="-0.02em"
+        color="#1A1A1E"
+        mt={1}
+        lineHeight="1.1"
+      >
         {value}
       </Text>
-    </Flex>
+      {hint && (
+        <Text fontSize="xs" color="#A1A1AA" mt={1}>
+          {hint}
+        </Text>
+      )}
+    </Card>
   );
 }
 
+const links = [
+  { to: "/contatos", name: "Contatos", desc: "Gerencie sua base." },
+  { to: "/campanhas", name: "Campanhas", desc: "Dispare email/SMS." },
+  { to: "/nps", name: "NPS", desc: "Meça satisfação." },
+];
+
 export function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.role === "super_admin") return;
+    dashboardApi
+      .summary()
+      .then(setSummary)
+      .catch((e) => setError(e instanceof Error ? e.message : "Erro"));
+  }, [user]);
+
   if (!user) return null;
+  if (user.role === "super_admin") return <Navigate to="/admin/empresas" replace />;
 
   return (
-    <Container maxW="5xl" py={{ base: 12, md: 16 }}>
-      <Stack gap={2.5} mb={12} animation="fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both">
-        <Text
-          fontFamily="heading"
-          fontSize={{ base: "3xl", md: "4xl" }}
-          fontWeight="600"
-          letterSpacing="-0.03em"
-          lineHeight="1.05"
-          color="#1A1A1E"
-        >
-          Olá, {user.name.split(" ")[0]}.
+    <Page
+      title={`Olá, ${user.name.split(" ")[0]}.`}
+      subtitle={`Painel da empresa #${user.company_id}. Os números abaixo refletem apenas os dados dela.`}
+    >
+      {error && (
+        <Text fontSize="sm" color="#B91C1C" mb={4}>
+          {error}
         </Text>
-        <Text fontSize="md" color="#71717A" maxW="lg" lineHeight="1.55">
-          Sua sessão está ativa, isolada pela empresa #{user.company_id}. Os módulos
-          abaixo operam apenas sobre os dados dela.
-        </Text>
-      </Stack>
+      )}
 
-      <SimpleGrid columns={{ base: 1, lg: 12 }} gap={5}>
-        <Box
-          gridColumn={{ base: "auto", lg: "span 5" }}
-          rounded="xl"
-          borderWidth="1px"
-          borderColor="rgba(0,0,0,0.08)"
-          bg="#FFFFFF"
-          p={6}
-          animation="fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.05s both"
-        >
-          <Text fontSize="sm" fontWeight="600" color="#1A1A1E" mb={4}>
-            Sessão
-          </Text>
-          <Stack gap={3}>
-            <MetaRow label="Operador" value={user.name} />
-            <Box h="1px" bg="rgba(0,0,0,0.06)" />
-            <MetaRow label="E-mail" value={user.email} />
-            <Box h="1px" bg="rgba(0,0,0,0.06)" />
-            <MetaRow label="Empresa" value={`#${user.company_id}`} />
-            <Box h="1px" bg="rgba(0,0,0,0.06)" />
-            <MetaRow label="Papel" value={user.role} />
-          </Stack>
-        </Box>
+      {summary === null ? (
+        <Flex justify="center" py={14}>
+          <Spinner />
+        </Flex>
+      ) : (
+        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4} mb={5}>
+          <Stat label="Contatos" value={String(summary.contacts)} />
+          <Stat label="Mensagens" value={String(summary.messages_sent)} hint="enviadas" />
+          <Stat label="Pesquisas" value={String(summary.surveys)} hint="NPS criadas" />
+          <Stat
+            label="NPS"
+            value={String(summary.nps)}
+            hint={summary.nps >= 0 ? "índice atual" : "índice atual"}
+          />
+        </SimpleGrid>
+      )}
 
-        <Box gridColumn={{ base: "auto", lg: "span 7" }}>
-          <Stack gap={3} h="full">
-            {modules.map((m, i) => (
-              <Flex
-                key={m.tag}
-                align="center"
-                gap={4}
-                rounded="xl"
-                borderWidth="1px"
-                borderColor="rgba(0,0,0,0.08)"
-                bg="#FFFFFF"
-                px={5}
-                py={4}
-                transition="border-color 0.18s ease"
-                animation={`fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.05}s both`}
-                _hover={{ borderColor: "rgba(0,0,0,0.18)" }}
-              >
-                <Box w="6px" h="6px" rounded="full" bg="#059669" flexShrink={0} />
-                <Box flex={1}>
-                  <Text fontSize="sm" fontWeight="600" color="#1A1A1E">
-                    {m.name}
-                  </Text>
-                  <Text fontSize="sm" color="#A1A1AA">
-                    {m.desc}
-                  </Text>
-                </Box>
-                <Text
-                  fontSize="xs"
-                  fontWeight="500"
-                  color="#A1A1AA"
-                  letterSpacing="0.04em"
-                >
-                  {m.tag}
-                </Text>
-              </Flex>
-            ))}
-          </Stack>
-        </Box>
+      <SimpleGrid columns={{ base: 1, sm: 3 }} gap={3}>
+        {links.map((l) => (
+          <Card
+            key={l.to}
+            p={5}
+            cursor="pointer"
+            transition="border-color 0.18s ease"
+            _hover={{ borderColor: "rgba(0,0,0,0.18)" }}
+            onClick={() => navigate(l.to)}
+          >
+            <Stack gap={0.5}>
+              <Text fontSize="sm" fontWeight="600" color="#1A1A1E">
+                {l.name}
+              </Text>
+              <Text fontSize="sm" color="#A1A1AA">
+                {l.desc}
+              </Text>
+            </Stack>
+          </Card>
+        ))}
       </SimpleGrid>
-    </Container>
+    </Page>
   );
 }
