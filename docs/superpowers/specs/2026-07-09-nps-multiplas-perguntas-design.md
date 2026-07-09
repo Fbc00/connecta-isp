@@ -89,8 +89,9 @@ linhas, mesma lógica). Sem alteração.
 ## Backend — rotas
 
 - `api/nps/surveys/index.post.ts`: repassa `questions` do body.
-- `api/nps/surveys/index.get.ts`: anexa `questionScores` (via
-  `getSurveyQuestionScores`) no lugar de `score`.
+- `api/nps/surveys/index.get.ts`: anexa o score dentro de cada pergunta —
+  `survey.questions[].score` (via `getSurveyQuestionScores`) no lugar do
+  `score` no nível do survey.
 - `api/nps/public/[token].get.ts`: retorna survey + perguntas.
 - `api/nps/public/[token].post.ts`: recebe `{ answers }` e repassa.
 
