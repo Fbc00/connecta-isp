@@ -6,6 +6,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      # Credenciais do super_admin criadas no primeiro boot (defina em produção)
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@connecta.local}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-connecta-admin}
+      # Provider de mensagens: mock (default) | resend | sendgrid | twilio
+      MESSAGE_PROVIDER: ${MESSAGE_PROVIDER:-mock}
+      # URL pública base para links de NPS
+      APP_URL: ${APP_URL:-http://localhost:8080}
     ports:
       - "8080:3000"
     volumes:

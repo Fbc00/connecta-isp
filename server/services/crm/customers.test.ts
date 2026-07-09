@@ -5,7 +5,9 @@ import { initSchema } from "../../database/db";
 import {
   createCustomer,
   deleteCustomer,
+  importCustomers,
   listCustomers,
+  normalizeTags,
   updateCustomer,
 } from "./customers";
 
@@ -47,5 +49,32 @@ describe("customers", () => {
     await expect(deleteCustomer(db, OTHER, mine.id)).rejects.toThrowError(
       /não encontrado/i,
     );
+  });
+
+  it("normaliza tags (trim, lowercase, dedupe)", () => {
+    expect(normalizeTags(" Fibra , vip ,FIBRA ")).toBe("fibra,vip");
+    expect(normalizeTags(null)).toBe("");
+  });
+
+  it("guarda e atualiza tags do contato", async () => {
+    const c = await createCustomer(db, CO, {
+      name: "T",
+      email: "t@x.com",
+      tags: "Fibra, VIP",
+    });
+    expect(c.tags).toBe("fibra,vip");
+    const updated = await updateCustomer(db, CO, c.id, { tags: "radio" });
+    expect(updated.tags).toBe("radio");
+  });
+
+  it("importa em massa pulando inválidos e duplicados", async () => {
+    await createCustomer(db, CO, { name: "Existe", email: "dup@x.com" });
+    const res = await importCustomers(db, CO, [
+      { name: "Novo", email: "novo@x.com", tags: "a" },
+      { name: "Dup", email: "dup@x.com" },
+      { name: "SemEmail" },
+    ]);
+    expect(res.created).toBe(1);
+    expect(res.skipped).toBe(2);
   });
 });

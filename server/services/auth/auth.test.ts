@@ -5,10 +5,12 @@ import { initSchema } from "../../database/db";
 import {
   authenticate,
   createSession,
+  createSuperAdmin,
   deleteSession,
   getSessionUser,
   hashPassword,
   hasRole,
+  isSuperAdmin,
   register,
   verifyPassword,
 } from "./auth";
@@ -43,6 +45,42 @@ describe("RBAC", () => {
     expect(hasRole("owner", "admin")).toBe(true);
     expect(hasRole("admin", "admin")).toBe(true);
     expect(hasRole("member", "admin")).toBe(false);
+  });
+
+  it("super_admin fica no topo da hierarquia", () => {
+    expect(hasRole("super_admin", "owner")).toBe(true);
+    expect(hasRole("owner", "super_admin")).toBe(false);
+    expect(isSuperAdmin({ role: "super_admin" })).toBe(true);
+    expect(isSuperAdmin({ role: "owner" })).toBe(false);
+  });
+});
+
+describe("super_admin", () => {
+  it("cria super_admin sem empresa e é idempotente", async () => {
+    const sa = await createSuperAdmin(db, {
+      name: "Root",
+      email: "root@plat.com",
+      password: "rootpass1",
+    });
+    expect(sa?.role).toBe("super_admin");
+    expect(sa?.company_id).toBeNull();
+
+    const again = await createSuperAdmin(db, {
+      name: "Root2",
+      email: "root2@plat.com",
+      password: "rootpass2",
+    });
+    expect(again).toBeNull();
+  });
+});
+
+describe("company status", () => {
+  it("bloqueia login de usuário em empresa inativa", async () => {
+    const user = await register(db, base);
+    await db.sql`UPDATE companies SET status = 'inactive' WHERE id = ${user.company_id}`;
+    await expect(authenticate(db, base.email, base.password)).rejects.toThrowError(
+      /desativada/i,
+    );
   });
 });
 

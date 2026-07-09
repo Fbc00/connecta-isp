@@ -2,7 +2,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { Database } from "db0";
 import { createError } from "h3";
 
-export const ROLES = ["member", "admin", "owner"] as const;
+export const ROLES = ["member", "admin", "owner", "super_admin"] as const;
 export type Role = (typeof ROLES)[number];
 
 export function roleRank(role: Role): number {
@@ -13,9 +13,13 @@ export function hasRole(role: Role, min: Role): boolean {
   return roleRank(role) >= roleRank(min);
 }
 
+export function isSuperAdmin(user: Pick<User, "role">): boolean {
+  return user.role === "super_admin";
+}
+
 export interface User {
   id: number;
-  company_id: number;
+  company_id: number | null;
   name: string;
   email: string;
   role: Role;
@@ -97,7 +101,36 @@ export async function authenticate(
   if (!row || !verifyPassword(pass, row.password_hash)) {
     throw unauthorized("E-mail ou senha inválidos");
   }
+  if (row.company_id != null) {
+    const { rows } = await db.sql`
+      SELECT status FROM companies WHERE id = ${row.company_id}
+    `;
+    const status = (rows as unknown as { status: string }[])[0]?.status;
+    if (status === "inactive") {
+      throw createError({ statusCode: 403, message: "Empresa desativada" });
+    }
+  }
   return publicUser(row);
+}
+
+/**
+ * Cria (ou garante) um usuário super_admin — sem empresa. Usado no seed de subida.
+ * Retorna null se já existir algum super_admin.
+ */
+export async function createSuperAdmin(
+  db: Database,
+  input: { name: string; email: string; password: string },
+): Promise<User | null> {
+  const { rows } = await db.sql`SELECT id FROM users WHERE role = 'super_admin' LIMIT 1`;
+  if ((rows as unknown[]).length > 0) return null;
+
+  const email = input.email.trim().toLowerCase();
+  const { lastInsertRowid } = await db.sql`
+    INSERT INTO users (company_id, name, email, password_hash, role)
+    VALUES (NULL, ${input.name.trim()}, ${email}, ${hashPassword(input.password)}, 'super_admin')
+  `;
+  const user = await findUserById(db, Number(lastInsertRowid));
+  return user ? publicUser(user) : null;
 }
 
 export async function createSession(db: Database, userId: number): Promise<string> {
