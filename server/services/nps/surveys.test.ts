@@ -3,7 +3,13 @@ import nodeSqlite from "db0/connectors/node-sqlite";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { initSchema } from "../../database/db";
 import { getInviteByToken, sendInvites, submitPublicResponse } from "./invites";
-import { createSurvey, getSurveyScore, listSurveys, setSurveyStatus } from "./surveys";
+import {
+  createSurvey,
+  getSurvey,
+  getSurveyQuestionScores,
+  listSurveys,
+  setSurveyStatus,
+} from "./surveys";
 
 const db = createDatabase(nodeSqlite({ name: ":memory:" }));
 const CO = 1;
@@ -19,6 +25,7 @@ beforeEach(async () => {
   await db.sql`DELETE FROM nps_responses`;
   await db.sql`DELETE FROM nps_invites`;
   await db.sql`DELETE FROM messages`;
+  await db.sql`DELETE FROM nps_questions`;
   await db.sql`DELETE FROM nps_surveys`;
   await db.sql`DELETE FROM customers`;
   const a =
@@ -32,9 +39,33 @@ beforeEach(async () => {
 describe("surveys", () => {
   it("cria com pergunta default e exige título", async () => {
     const s = await createSurvey(db, CO, { title: "Q3" });
-    expect(s.question).toMatch(/recomendaria/i);
+    expect(s.questions).toHaveLength(1);
+    expect(s.questions[0].text).toMatch(/recomendaria/i);
     expect((await listSurveys(db, CO)).length).toBe(1);
     await expect(createSurvey(db, CO, { title: "" })).rejects.toThrowError(/título/i);
+  });
+
+  it("cria com N perguntas na ordem informada", async () => {
+    const s = await createSurvey(db, CO, {
+      title: "Multi",
+      questions: ["Atendimento?", "Velocidade?", "Preço?"],
+    });
+    expect(s.questions.map((q) => q.text)).toEqual([
+      "Atendimento?",
+      "Velocidade?",
+      "Preço?",
+    ]);
+    expect(s.questions.map((q) => q.position)).toEqual([0, 1, 2]);
+    // Retrocompat: primeira pergunta espelhada em survey.question.
+    expect(s.question).toBe("Atendimento?");
+  });
+
+  it("ignora perguntas vazias e exige ao menos uma", async () => {
+    const s = await createSurvey(db, CO, { title: "T", questions: ["  ", "Ok?"] });
+    expect(s.questions.map((q) => q.text)).toEqual(["Ok?"]);
+    await expect(
+      createSurvey(db, CO, { title: "T", questions: ["   "] }),
+    ).rejects.toThrowError(/pergunta/i);
   });
 
   it("altera status com validação", async () => {
@@ -43,9 +74,12 @@ describe("surveys", () => {
     await expect(setSurveyStatus(db, CO, s.id, "x")).rejects.toThrowError(/inválido/i);
   });
 
-  it("score vazio é zero", async () => {
-    const s = await createSurvey(db, CO, { title: "Q" });
-    expect(await getSurveyScore(db, CO, s.id)).toEqual({
+  it("score por pergunta é zero quando sem respostas", async () => {
+    const s = await createSurvey(db, CO, { title: "Q", questions: ["A?", "B?"] });
+    const scores = await getSurveyQuestionScores(db, CO, s.id);
+    expect(scores).toHaveLength(2);
+    expect(scores[0]).toMatchObject({
+      text: "A?",
       promoters: 0,
       passives: 0,
       detractors: 0,
