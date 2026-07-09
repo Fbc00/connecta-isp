@@ -17,8 +17,8 @@ export function PublicNps() {
   const { token = "" } = useParams();
   const [invite, setInvite] = useState<PublicInvite | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [score, setScore] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
+  const [scores, setScores] = useState<Record<number, number>>({});
+  const [comments, setComments] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +33,22 @@ export function PublicNps() {
       .catch((e) => setLoadError(e instanceof Error ? e.message : "Convite inválido"));
   }, [token]);
 
+  const allAnswered =
+    invite != null &&
+    invite.survey.questions.length > 0 &&
+    invite.survey.questions.every((q) => scores[q.id] != null);
+
   async function submit() {
-    if (score == null) return;
+    if (!invite || !allAnswered) return;
     setSubmitting(true);
     setError(null);
     try {
-      await npsPublicApi.respond(token, score, comment);
+      const answers = invite.survey.questions.map((q) => ({
+        question_id: q.id,
+        score: scores[q.id],
+        comment: comments[q.id]?.trim() || undefined,
+      }));
+      await npsPublicApi.respond(token, answers);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao enviar");
@@ -85,53 +95,58 @@ export function PublicNps() {
               </Text>
             </Stack>
           ) : (
-            <Stack gap={5}>
-              <Stack gap={1}>
-                <Text fontFamily="heading" fontSize="lg" fontWeight="600" color="#1A1A1E">
-                  {invite.survey.title}
-                </Text>
-                <Text fontSize="sm" color="#52525B" lineHeight="1.5">
-                  {invite.survey.question}
-                </Text>
-              </Stack>
+            <Stack gap={6}>
+              <Text fontFamily="heading" fontSize="lg" fontWeight="600" color="#1A1A1E">
+                {invite.survey.title}
+              </Text>
 
-              <Flex flexWrap="wrap" gap={1.5} justify="center">
-                {SCALE.map((n) => (
-                  <Pressable
-                    key={n}
-                    type="button"
-                    w="36px"
-                    h="36px"
+              {invite.survey.questions.map((q) => (
+                <Stack key={q.id} gap={3}>
+                  <Text fontSize="sm" color="#52525B" lineHeight="1.5">
+                    {q.text}
+                  </Text>
+                  <Flex flexWrap="wrap" gap={1.5} justify="center">
+                    {SCALE.map((n) => (
+                      <Pressable
+                        key={n}
+                        type="button"
+                        w="36px"
+                        h="36px"
+                        rounded="lg"
+                        fontSize="sm"
+                        fontWeight="600"
+                        textAlign="center"
+                        borderWidth="1px"
+                        borderColor={
+                          scores[q.id] === n ? scoreColor(n) : "rgba(0,0,0,0.12)"
+                        }
+                        bg={scores[q.id] === n ? scoreColor(n) : "#FFFFFF"}
+                        color={scores[q.id] === n ? "#FFFFFF" : "#52525B"}
+                        transition="all 0.12s ease"
+                        onClick={() => setScores((prev) => ({ ...prev, [q.id]: n }))}
+                      >
+                        {n}
+                      </Pressable>
+                    ))}
+                  </Flex>
+                  <Textarea
+                    value={comments[q.id] ?? ""}
+                    onChange={(e) =>
+                      setComments((prev) => ({ ...prev, [q.id]: e.target.value }))
+                    }
+                    placeholder="Quer deixar um comentário? (opcional)"
+                    minH="72px"
                     rounded="lg"
+                    borderColor="rgba(0,0,0,0.12)"
                     fontSize="sm"
-                    fontWeight="600"
-                    textAlign="center"
-                    borderWidth="1px"
-                    borderColor={score === n ? scoreColor(n) : "rgba(0,0,0,0.12)"}
-                    bg={score === n ? scoreColor(n) : "#FFFFFF"}
-                    color={score === n ? "#FFFFFF" : "#52525B"}
-                    transition="all 0.12s ease"
-                    onClick={() => setScore(n)}
-                  >
-                    {n}
-                  </Pressable>
-                ))}
-              </Flex>
-
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Quer deixar um comentário? (opcional)"
-                minH="80px"
-                rounded="lg"
-                borderColor="rgba(0,0,0,0.12)"
-                fontSize="sm"
-                _focusVisible={{
-                  borderColor: "#059669",
-                  boxShadow: "0 0 0 3px rgba(5,150,105,0.14)",
-                  outline: "none",
-                }}
-              />
+                    _focusVisible={{
+                      borderColor: "#059669",
+                      boxShadow: "0 0 0 3px rgba(5,150,105,0.14)",
+                      outline: "none",
+                    }}
+                  />
+                </Stack>
+              ))}
 
               {error && (
                 <Text fontSize="sm" color="#B91C1C">
@@ -141,7 +156,7 @@ export function PublicNps() {
 
               <PrimaryButton
                 loading={submitting}
-                disabled={score == null}
+                disabled={!allAnswered}
                 onClick={submit}
               >
                 Enviar resposta
