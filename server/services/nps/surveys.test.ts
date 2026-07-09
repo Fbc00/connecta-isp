@@ -87,6 +87,18 @@ describe("surveys", () => {
       nps: 0,
     });
   });
+
+  it("não vaza perguntas de outra empresa em getSurveyQuestionScores", async () => {
+    const OTHER = 999;
+    await db.sql`INSERT OR IGNORE INTO companies (id, name) VALUES (${OTHER}, 'Outra')`;
+    const mine = await createSurvey(db, CO, { title: "Minha", questions: ["A?"] });
+    // pedir os scores da MINHA survey usando o companyId de OUTRA empresa não retorna nada
+    const leaked = await getSurveyQuestionScores(db, OTHER, mine.id);
+    expect(leaked).toEqual([]);
+    // scoping correto ainda funciona
+    const ok = await getSurveyQuestionScores(db, CO, mine.id);
+    expect(ok).toHaveLength(1);
+  });
 });
 
 describe("nps ciclo completo", () => {
